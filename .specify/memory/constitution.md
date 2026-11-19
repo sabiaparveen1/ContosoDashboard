@@ -1,50 +1,83 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: unversioned scaffold -> 1.0.0 (initial adoption)
+Modified principles: None (initial adoption)
+Added principles: I. Training-First, Offline-Ready Learning; II. Security Concepts With Honest Boundaries; III. Layered, Testable Design; IV. Spec-Driven, Verifiable Changes; V. Simplicity and Documented Limitations
+Added sections: Training Context and Technical Constraints; Spec-Driven Development and Quality Gates
+Removed sections: None
+Follow-up TODOs: Confirm the original ratification date; it is not recorded in the repository.
+-->
+
+# ContosoDashboard Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Training-First, Offline-Ready Learning
+The application and its examples MUST remain explicitly scoped to training and educational use.
+Baseline development and use MUST remain local and offline, without requiring cloud accounts or
+external services. Project guidance MUST identify mock features and known limitations rather than
+imply production readiness. This keeps the training experience accessible and self-contained.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Security Concepts With Honest Boundaries
+Features involving identity or data access MUST demonstrate explicit authentication and
+authorization, least privilege, user/resource isolation, and defense in depth where applicable.
+Mock authentication, sample identities, and simplified controls MUST be labeled training-only and
+MUST NOT be represented as production security. Specifications for such changes MUST state the
+relevant access boundaries and expected behavior for unauthorized requests.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Layered, Testable Design
+Changes MUST preserve clear responsibilities between UI, business services, domain models, and
+persistence. Application code MUST use interface abstractions and dependency injection when an
+infrastructure implementation is intended to be replaceable. Services that return protected
+resources MUST enforce access rules rather than rely only on UI visibility. New or changed behavior
+MUST have appropriate automated tests.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Spec-Driven, Verifiable Changes
+Substantial feature work MUST follow the repository's Spec Kit workflow: define a specification,
+review the plan, generate ordered tasks, then implement. Specifications MUST express testable
+acceptance criteria. Changes MUST run the relevant available tests and report the actual validation
+performed; incomplete or unavailable validation MUST be stated rather than implied.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Documented Limitations
+Solutions MUST favor the simplest design that meets the educational objective and the requirements.
+Examples and project guidance MUST remain consistent with actual behavior. Known training
+limitations MUST be documented, and production-grade complexity MUST NOT be added without a
+demonstrated project need.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Training Context and Technical Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- The supported baseline is ASP.NET Core 8, Blazor Server, Entity Framework Core, and SQL Server
+  LocalDB, as described in the project documentation.
+- The baseline MUST work locally without cloud integrations or external service dependencies.
+  Changes to the baseline stack or dependencies MUST be documented in the relevant specification
+  and project guidance.
+- Mock authentication and seeded sample users exist for training only. Any production migration
+  notes are educational guidance, not a claim that this project is production-ready.
+- Sample data and examples MUST remain fictional and MUST NOT contain real credentials or personal
+  data.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Spec-Driven Development and Quality Gates
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Feature specifications MUST describe user-visible behavior, constraints, and acceptance criteria
+  before implementation begins.
+- Plans and task lists MUST be reviewed at the workflow's review gates before the next phase.
+- Implementation MUST include or update tests appropriate to the changed behavior and MUST run the
+  relevant test/build checks available in the repository.
+- Reviews MUST check security boundaries, documentation accuracy, and consistency with these
+  principles. Any unresolved deviation or validation gap MUST be recorded in the feature artifacts
+  or review summary.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution governs project-level decisions. Proposed amendments MUST document their
+rationale, affected principles or sections, and any migration implications. Repository maintainers
+MUST review and approve amendments before merge. Feature specifications, plans, and code reviews
+MUST check for compliance; any exception MUST be explicit, scoped, and justified in the related
+feature artifacts.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Constitution versions use semantic versioning. A MAJOR increment marks a backward-incompatible
+governance change or removal/redefinition of a principle. A MINOR increment marks a new principle
+or section, or materially expanded guidance. A PATCH increment marks clarifications, wording
+improvements, and non-semantic refinements.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): original adoption date not recorded | **Last Amended**: 2026-11-19
