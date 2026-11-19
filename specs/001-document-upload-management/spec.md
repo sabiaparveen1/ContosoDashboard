@@ -201,17 +201,18 @@ The following ambiguities have been identified and clarified for implementation:
 ### Q2: File Type Validation Strategy
 **Question**: When a user uploads a file with a `.doc` extension that's actually a PDF (wrong extension), should the system validate by file extension, actual file type, or both?
 
-**Current State**: FR-010 mentions "validate file extensions against whitelist" but doesn't address MIME type or magic byte detection.
+**Current State**: FR-010 now requires validating detected file content against the supported-format whitelist; the original requirement did not define how to handle a filename-extension mismatch or content detection.
 
 **Ambiguity/Gap**: Extension-only validation is vulnerable to spoofing; MIME type detection could reject legitimately renamed files. This impacts both security and user experience.
 
 **Proposed Answer**: **Option A - Validate by actual file type detected (magic bytes), regardless of file extension.** System should:
 1. Scan file magic bytes/headers to detect actual format
 2. Compare detected type against whitelist
-3. If mismatch: reject with message explaining actual vs expected type
-4. This prevents polyglot file attacks while accepting legitimately renamed files
+3. Accept the upload when the detected content is allowlisted, even if the filename extension differs; derive the MIME type and storage extension from the detected format
+4. Reject unsupported, malformed, or indeterminate content with a clear error
+5. This prevents extension spoofing while accepting legitimately renamed files
 
-**Implementation Impact**: Requires magic byte detection library (libmagic or similar). More secure but slightly slower validation. Better user experience than extension-only rejection.
+**Implementation Impact**: Requires content-signature and format validation. More secure than extension-only validation and accepts supported files whose names have been changed.
 
 ---
 
@@ -296,7 +297,7 @@ This enables:
 - **FR-007**: System MUST automatically capture upload date/time, uploader name, file size, file type (MIME type)
 - **FR-008**: System MUST store files outside web-accessible directory using pattern: `{userId}/{projectId or "personal"}/{GUID}.{extension}`
 - **FR-009**: System MUST scan all uploaded files for viruses/malware before storage and reject infected files
-- **FR-010**: System MUST validate file extensions against whitelist before accepting upload
+- **FR-010**: System MUST detect and validate uploaded file content against the supported-format whitelist; the filename extension and browser-provided MIME type MUST NOT determine the accepted format
 - **FR-011**: System MUST use GUID-based filenames to prevent path traversal attacks
 - **FR-012**: System MUST generate unique file paths BEFORE database insertion to prevent duplicate key violations
 
