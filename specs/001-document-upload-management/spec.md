@@ -181,6 +181,107 @@ Users need quick access to their recently uploaded documents from dashboard home
 - **Permission Loss**: What happens if document owner's project membership is revoked? System should maintain existing document access but prevent new operations
 - **Deleted Project**: What happens if project associated with documents is deleted? Documents should remain but project filter should handle gracefully
 
+## Clarification Questions
+
+The following ambiguities have been identified and clarified for implementation:
+
+### Q1: Document Re-sharing Permissions
+**Question**: When a document is shared with a user or team, can the recipient further share that document with others, or is sharing restricted to the original document owner?
+
+**Current State**: Specification defines sharing capabilities (FR-030-032) but doesn't explicitly limit re-sharing permissions.
+
+**Ambiguity/Gap**: This affects authorization model complexity and audit traceability. Unclear whether recipients become secondary sharing authorities or remain read-only recipients.
+
+**Proposed Answer**: **Option A - Only the document owner can share.** Recipients have read/download-only access to shared documents. Only the original owner can grant access to others. This maintains clear authorization traceability, aligns with common patterns (OneDrive, SharePoint), and supports robust audit logging for compliance.
+
+**Implementation Impact**: Simplifies authorization checks (single-level permission tree) and audit trail tracking. Reduces permission propagation complexity.
+
+---
+
+### Q2: File Type Validation Strategy
+**Question**: When a user uploads a file with a `.doc` extension that's actually a PDF (wrong extension), should the system validate by file extension, actual file type, or both?
+
+**Current State**: FR-010 mentions "validate file extensions against whitelist" but doesn't address MIME type or magic byte detection.
+
+**Ambiguity/Gap**: Extension-only validation is vulnerable to spoofing; MIME type detection could reject legitimately renamed files. This impacts both security and user experience.
+
+**Proposed Answer**: **Option A - Validate by actual file type detected (magic bytes), regardless of file extension.** System should:
+1. Scan file magic bytes/headers to detect actual format
+2. Compare detected type against whitelist
+3. If mismatch: reject with message explaining actual vs expected type
+4. This prevents polyglot file attacks while accepting legitimately renamed files
+
+**Implementation Impact**: Requires magic byte detection library (libmagic or similar). More secure but slightly slower validation. Better user experience than extension-only rejection.
+
+---
+
+### Q3: Tag Storage Mechanism
+**Question**: When document tags are stored, should they be a comma-separated string, a normalized relationship table, or JSON array?
+
+**Current State**: Data model specifies Tags as "string, comma-separated or relationship table" (deliberately ambiguous).
+
+**Ambiguity/Gap**: Storage mechanism affects query performance, search capability, and data normalization. String approach limits searching; relationship table enables robust filtering and prevents duplication.
+
+**Proposed Answer**: **Option B - Create DocumentTag relationship table.** Schema should be:
+```
+DocumentTag (
+  DocumentId (FK to Document),
+  TagId (FK to Tag),
+  PRIMARY KEY (DocumentId, TagId)
+)
+
+Tag (
+  TagId (PK),
+  TagName (string, unique),
+  CreatedDate
+)
+```
+
+This enables:
+- Efficient full-text search across tags
+- Tag reuse and consistency
+- Future tag analytics and trending
+- Prevents duplicate tag data
+
+**Implementation Impact**: Requires additional table and join queries for tag retrieval/filtering. Improves search performance and data integrity. Enables future features like tag suggestions and trending tags.
+
+---
+
+### Q4: Concurrent Access Handling
+**Question**: When a user edits document metadata while another user is simultaneously downloading the same file, should operations be locked, queued, or allowed concurrently?
+
+**Current State**: No explicit guidance on optimistic/pessimistic locking or conflict resolution for concurrent access.
+
+**Ambiguity/Gap**: Affects system design for concurrency. Locking improves data consistency but reduces UX (operations fail or queue). Concurrent access improves responsiveness but requires eventual consistency.
+
+**Proposed Answer**: **Option A - Allow concurrent operations without locking (eventual consistency).** Rationale:
+- Metadata (title, description, tags) and file content are independent concerns
+- Download uses immutable file version; metadata changes don't invalidate downloads
+- Concurrent operations improve UX (no blocked/queued operations)
+- Last-write-wins is acceptable for metadata edits (infrequent, non-critical)
+- Implements optimistic concurrency with version tracking for change detection
+
+**Implementation Impact**: Simpler implementation (no distributed locking). Uses EF Core's built-in concurrency tokens (RowVersion/Timestamp). Requires users to refresh UI if metadata changes detected mid-session.
+
+---
+
+### Q5: Document Access After Project Membership Change
+**Question**: When a document owner is removed from a project, should their previously uploaded project documents remain accessible to the project, transfer ownership, or become restricted?
+
+**Current State**: Edge case acknowledges "Permission Loss" scenario but doesn't prescribe behavior.
+
+**Ambiguity/Gap**: Affects both authorization logic and business continuity. Options have trade-offs between project continuity (documents should stay), individual privacy (documents leave with user), and admin overhead (transfer to PM).
+
+**Proposed Answer**: **Option A - Documents remain accessible to project team members; owner loses management rights.** Specifically:
+- **Access**: Project team members can still download/preview project documents
+- **Management**: Original owner can no longer edit metadata, replace file, or delete documents
+- **Authority**: Project Manager can manage these "orphaned" documents (edit metadata, delete, etc.)
+- **Rationale**: Documents represent project work product and intellectual property, not personal files. Project continuity is prioritized. Prevents knowledge loss when individuals leave projects.
+
+**Implementation Impact**: Authorization logic must distinguish between "owner" (created document) and "manager" (can edit/delete). "Orphaned" documents need PM escalation path for lifecycle management. Project removal from user's project list doesn't cascade to document access.
+
+---
+
 ## Requirements
 
 ### Functional Requirements
