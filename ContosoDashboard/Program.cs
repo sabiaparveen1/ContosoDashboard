@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using ContosoDashboard.Data;
 using ContosoDashboard.Services;
+using ContosoDashboard.Services.Storage;
+using ContosoDashboard.Services.Scanning;
+using ContosoDashboard.Services.Documents;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -9,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddControllers();
 
 // Add authentication state provider for Blazor
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
@@ -44,10 +48,27 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+// Register document services
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+var scanningEnabled = builder.Configuration.GetValue("FileScanning:Enabled", true);
+if (!scanningEnabled && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException("File scanning can only be disabled in Development.");
+}
+
+if (scanningEnabled)
+    builder.Services.AddScoped<IFileMalwareScanner, TestFileMalwareScanner>();
+else
+    builder.Services.AddScoped<IFileMalwareScanner, DisabledFileMalwareScanner>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+
 // Add HttpContextAccessor for accessing user claims
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+
+if (!scanningEnabled)
+    app.Logger.LogWarning("File scanning is disabled for this Development instance.");
 
 // Initialize database
 using (var scope = app.Services.CreateScope())
@@ -56,12 +77,17 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated(); // For development - use migrations in production
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        
+        // Apply pending migrations
+        context.Database.Migrate();
+        logger.LogInformation("Database migrations completed successfully");
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred creating the database.");
+        logger.LogError(ex, "An error occurred applying migrations.");
+        throw;
     }
 }
 
@@ -105,6 +131,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
