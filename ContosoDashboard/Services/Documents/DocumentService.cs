@@ -48,7 +48,7 @@ public class DocumentService : IDocumentService
 
     private async Task<bool> CanAccessDocumentAsync(int documentId, int userId)
     {
-        var doc = await _context.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.DocumentId == documentId);
+        var doc = await _context.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.DocumentId == documentId && !d.IsDeleted);
         if (doc == null) return false;
 
         // Owner can always access
@@ -111,6 +111,8 @@ public class DocumentService : IDocumentService
 
         return await _context.Documents
             .AsNoTracking()
+            .Include(d => d.UploadedByUser)
+            .Include(d => d.Project)
             .Include(d => d.DocumentTags).ThenInclude(dt => dt.Tag)
             .Include(d => d.Shares.Where(s => s.IsActive)).ThenInclude(s => s.SharedWithUser)
             .FirstOrDefaultAsync(d => d.DocumentId == documentId, cancellationToken);

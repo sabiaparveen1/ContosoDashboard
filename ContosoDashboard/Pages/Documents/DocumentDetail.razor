@@ -57,7 +57,7 @@
                                 <p><strong>Type:</strong> <span class="badge bg-secondary">@document.FileExtension</span></p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Uploaded By:</strong> @document.UploadedByUser.DisplayName</p>
+                                <p><strong>Uploaded By:</strong> @(document.UploadedByUser?.DisplayName ?? "Unknown")</p>
                                 <p><strong>Uploaded On:</strong> @document.UploadedDate.ToString("yyyy-MM-dd HH:mm:ss")</p>
                                 <p><strong>Last Updated:</strong> @document.UpdatedDate.ToString("yyyy-MM-dd HH:mm:ss")</p>
                             </div>
@@ -69,7 +69,7 @@
                                 <strong>Tags:</strong>
                                 @foreach (var tag in document.DocumentTags)
                                 {
-                                    <span class="badge bg-info">@tag.Tag.Name</span>
+                                    <span class="badge bg-info">@(tag.Tag?.Name ?? "Unknown")</span>
                                 }
                             </div>
                         }
@@ -104,7 +104,7 @@
                             <h5>Edit Document Metadata</h5>
                         </div>
                         <div class="card-body">
-                            <form @onsubmit="SaveMetadata">
+                            <form @onsubmit="SaveMetadata" @onsubmit:preventDefault>
                                 <div class="mb-3">
                                     <label for="editTitle" class="form-label">Title</label>
                                     <input type="text" class="form-control" id="editTitle" @bind="editTitle" />
@@ -174,8 +174,8 @@
                             {
                                 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                                     <div>
-                                        <p class="mb-0">@share.SharedWithUser.DisplayName</p>
-                                        <small class="text-muted">@share.SharedWithUser.Email</small>
+                                        <p class="mb-0">@(share.SharedWithUser?.DisplayName ?? "Unknown")</p>
+                                        <small class="text-muted">@share.SharedWithUser?.Email</small>
                                     </div>
                                     @if (IsOwner())
                                     {
@@ -254,12 +254,8 @@
             {
                 editTitle = document.Title;
                 editDescription = document.Description ?? string.Empty;
-                editTagsInput = string.Join(", ", document.DocumentTags.Select(dt => dt.Tag.Name));
+                editTagsInput = string.Join(", ", document.DocumentTags.Where(dt => dt.Tag != null).Select(dt => dt.Tag.Name));
             }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Error loading document: {ex.Message}";
         }
         finally
         {
@@ -286,7 +282,7 @@
         {
             editTitle = document.Title;
             editDescription = document.Description ?? string.Empty;
-            editTagsInput = document.DocumentTags.Count > 0 ? string.Join(", ", document.DocumentTags.Select(dt => dt.Tag.Name)) : string.Empty;
+            editTagsInput = string.Join(", ", document.DocumentTags.Where(dt => dt.Tag != null).Select(dt => dt.Tag.Name));
         }
     }
 
@@ -299,14 +295,14 @@
             isSaving = true;
             var tags = editTagsInput.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
 
-            var updated = await DocumentService.UpdateMetadataAsync(
+            await DocumentService.UpdateMetadataAsync(
                 DocumentId,
                 editTitle,
                 editDescription,
                 tags,
                 currentUserId);
 
-            document = updated;
+            await LoadDocument();
             isEditMode = false;
             successMessage = "Document metadata updated successfully!";
 

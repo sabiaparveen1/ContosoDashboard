@@ -159,6 +159,28 @@ public interface IFileStorageService
 
 4. **Login** - Select any user from the dropdown (no password required)
 
+### Checking document details
+
+Stop any running instance first, then from the repository root build and run on
+port 5050:
+
+```powershell
+dotnet build .\ContosoDashboard\ContosoDashboard.csproj
+dotnet run --project .\ContosoDashboard\ContosoDashboard.csproj --no-launch-profile -- --urls http://localhost:5050 --environment Development
+```
+
+Log in as Ni Kang and open **Documents > My Documents > Test Document 2**
+(`/documents/detail/2`). The uploader, tags, and active share recipients should
+load without errors; missing related display values show "Unknown".
+
+- **Edit**: change metadata and save; verify the values persist after refreshing
+  and that uploader and sharing information remain visible.
+- **Preview / Download**: preview a supported file (PDF, image, or text) in a new
+  tab; download it with its original filename.
+- **Delete**: use a disposable document. Cancel the confirmation first and verify
+  it remains, then confirm deletion and verify it disappears from My Documents
+  and can no longer be opened, previewed, or downloaded.
+
 The application automatically creates and seeds the database on first run with sample users, projects, tasks, and announcements.
 
 ### Testing Security Features
@@ -351,20 +373,16 @@ The application includes pre-seeded data for testing:
 
 ### Database Issues
 
-**Option 1: Recreate via LocalDB**
+If the login dropdown is empty after creating or recreating LocalDB, stop the running app
+and run the following from the repository root:
 
 ```powershell
-sqllocaldb stop mssqllocaldb
-sqllocaldb delete mssqllocaldb
-# Then run the application - database will be recreated automatically
+dotnet run --project .\ContosoDashboard\ContosoDashboard.csproj --launch-profile http -- --urls http://localhost:5050
 ```
 
-**Option 2: Using EF Tools**
-
-- Delete database: `dotnet ef database drop --force`
-- Recreate: Run application (auto-creates with seed data)
-
-**Note**: The application uses `EnsureCreated()` for development, so just running `dotnet run` will automatically create and seed the database if it doesn't exist.
+Open [http://localhost:5050/login](http://localhost:5050/login). On startup the app applies pending
+EF Core migrations, including the migration that inserts the demo users, project, and tasks.
+You do not need to drop the database or install `dotnet-ef`.
 
 ## Security Concepts and Patterns
 
